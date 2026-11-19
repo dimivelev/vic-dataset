@@ -1,0 +1,229 @@
+{
+  "recipe": {
+    "model_providers": [],
+    "mcp_providers": [],
+    "model_configs": [],
+    "seed_config": {
+      "source": {
+        "seed_type": "local",
+        "path": "recipe_seed.jsonl"
+      },
+      "sampling_strategy": "shuffle",
+      "selection_strategy": null
+    },
+    "tool_configs": [],
+    "columns": [
+      {
+        "column_type": "sampler",
+        "name": "prompt_template",
+        "drop": true,
+        "sampler_type": "category",
+        "params": {
+          "values": [
+            "Разкажи ми ТЕМА.",
+            "Разкажи ТЕМА.",
+            "Знаеш ли някой ТЕМА?",
+            "Искам да чуя ТЕМА.",
+            "Сподели един ТЕМА.",
+            "Дай ми ТЕМА, моля.",
+            "Хайде, един ТЕМА!",
+            "Сети ли се за някой ТЕМА?",
+            "Можеш ли да ми разкажеш ТЕМА?",
+            "Развесели ме с ТЕМА."
+          ]
+        }
+      },
+      {
+        "column_type": "sampler",
+        "name": "use_topic",
+        "drop": true,
+        "sampler_type": "bernoulli",
+        "params": {
+          "p": 0.85
+        }
+      },
+      {
+        "column_type": "sampler",
+        "name": "generic_topic",
+        "drop": true,
+        "sampler_type": "category",
+        "params": {
+          "values": [
+            "виц",
+            "смешен виц",
+            "хубав виц"
+          ],
+          "weights": [
+            5,
+            3,
+            2
+          ]
+        }
+      },
+      {
+        "column_type": "expression",
+        "name": "instruction",
+        "drop": false,
+        "expr": "{{ prompt_template | replace('ТЕМА', topic if use_topic == 1 else generic_topic) }}",
+        "dtype": "str"
+      }
+    ],
+    "processors": [
+      {
+        "processor_type": "drop_columns",
+        "name": "drop_seed_columns",
+        "column_names": [
+          "id",
+          "topic"
+        ]
+      },
+      {
+        "processor_type": "schema_transform",
+        "name": "messages_format",
+        "template": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "{{ instruction }}"
+            },
+            {
+              "role": "assistant",
+              "content": "{{ output }}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "run": {
+    "rows": 10,
+    "preview": true,
+    "output_formats": [
+      "jsonl"
+    ]
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "note_1",
+        "x": -560,
+        "y": 40,
+        "width": 420,
+        "node_type": "markdown_note",
+        "name": "note_1",
+        "note_color": "#DCFCE7",
+        "note_opacity": "35",
+        "markdown": "#### Bulgarian jokes (вицове) → SFT dataset\n\n**Seed:** upload `recipe_seed.jsonl` made by\n`python build_dataset.py --format seed`\n(after `scrape.py` and `clean.py`).\n\nSeed columns:\n- `output` – the joke (becomes the answer)\n- `topic` – e.g. `виц за Иванчо`, `габровски виц`\n- `id` – dropped from the final dataset\n\nNSFW / sensitive / length filters are applied when you make the seed file (Data Recipes cannot filter rows)."
+      },
+      {
+        "id": "note_2",
+        "x": 520,
+        "y": -330,
+        "width": 420,
+        "node_type": "markdown_note",
+        "name": "note_2",
+        "note_color": "#CFFAFE",
+        "note_opacity": "35",
+        "markdown": "#### How the prompt is built\n\n- `prompt_template` picks one of 10 Bulgarian requests with a `ТЕМА` placeholder\n- `use_topic` = 1 in 85% of rows → `ТЕМА` becomes the joke's topic\n- otherwise a generic phrase (`виц`, `смешен виц`…) so the model also learns to choose a topic itself\n\nResult: `instruction` + `output` columns (detected as Alpaca format in Unsloth training).\nThe `messages_format` processor also writes a chat-format copy (`messages`) in the download."
+      },
+      {
+        "id": "note_3",
+        "x": 1000,
+        "y": 40,
+        "width": 380,
+        "node_type": "markdown_note",
+        "name": "note_3",
+        "note_color": "#FDE68A",
+        "note_opacity": "35",
+        "markdown": "#### Run settings\n\nPreview first (10 rows). For the full build set **rows = number of lines in `recipe_seed.jsonl`** (build_dataset.py prints it) so every joke is used exactly once. More rows than seed lines would repeat jokes.\n\nNo LLM is needed – this recipe runs on CPU in seconds."
+      },
+      {
+        "id": "seed",
+        "x": -40,
+        "y": 200,
+        "width": 400
+      },
+      {
+        "id": "prompt_template",
+        "x": -40,
+        "y": 560,
+        "width": 400
+      },
+      {
+        "id": "use_topic",
+        "x": -40,
+        "y": 760,
+        "width": 400
+      },
+      {
+        "id": "generic_topic",
+        "x": -40,
+        "y": 960,
+        "width": 400
+      },
+      {
+        "id": "instruction",
+        "x": 520,
+        "y": 420,
+        "width": 400
+      }
+    ],
+    "edges": [
+      {
+        "from": "seed",
+        "to": "instruction",
+        "type": "canvas",
+        "source_handle": "data-out",
+        "target_handle": "data-in"
+      },
+      {
+        "from": "prompt_template",
+        "to": "instruction",
+        "type": "canvas",
+        "source_handle": "data-out",
+        "target_handle": "data-in"
+      },
+      {
+        "from": "use_topic",
+        "to": "instruction",
+        "type": "canvas",
+        "source_handle": "data-out",
+        "target_handle": "data-in"
+      },
+      {
+        "from": "generic_topic",
+        "to": "instruction",
+        "type": "canvas",
+        "source_handle": "data-out",
+        "target_handle": "data-in"
+      }
+    ],
+    "layout_direction": "LR",
+    "seed_source_type": "local",
+    "seed_columns": [
+      "id",
+      "output",
+      "topic"
+    ],
+    "seed_drop_columns": [
+      "id",
+      "topic"
+    ],
+    "seed_preview_rows": [
+      {
+        "id": "906f33ccbd3c",
+        "output": "Бай Ганьо отишъл в Париж и влязъл в ресторант.\n– Какво ще желаете? – пита сервитьорът.\n– Нещо евтино, ама много!",
+        "topic": "виц за Бай Ганьо"
+      },
+      {
+        "id": "1c0d5e2f7a10",
+        "output": "Един габровец си купил часовник без стрелки.\n– Защо без стрелки? – питат го.\n– Да не се хаби времето, бе!",
+        "topic": "габровски виц"
+      }
+    ],
+    "local_file_name": "recipe_seed.jsonl",
+    "unstructured_file_name": "",
+    "unstructured_chunk_size": "1200",
+    "unstructured_chunk_overlap": "200"
+  }
+}
