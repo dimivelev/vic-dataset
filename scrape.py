@@ -118,6 +118,8 @@ META_LINE_RE = re.compile(
       | \d+\s*(коментара?|гласа?|харесвания|прегледа?)
       | \d[\d\s]*\s+вица?\b.*                          # "40 вица, разпределени в 4 страници"
       | В\s+тази\s+категория\s+има.*
+      | от\s+възможни\s+[\d\s]+.*                         # rating split over lines (vicove.biz)
+      | [-–]?\s*общо:?\s*[\d\s]+
       | \(\d{4}\)                                        # "(2003)" year stamp (fun.dir.bg)
       | (към\s+)?вица                                   # split "към вица" link text
       | (Вицове|Още\s+вицове)\s+(за|с|от)\s+[^.!?]{1,40}  # category headings
@@ -379,6 +381,11 @@ class Extractor:
             text = clean_lines(node_text(body))
             if not text:
                 continue
+            lines = text.split("\n")
+            # drop a short label line such as a post title/category ("SMS")
+            if len(lines) > 1 and len(lines[0]) <= 30 and not re.search(r"[.!?:…\"„“”»)]$", lines[0]) \
+                    and not lines[0].startswith(("-", "–", "—")):
+                text = "\n".join(lines[1:])
             if jid is None:  # no permalink: use content hash as id
                 jid = "h" + hashlib.md5(text.encode("utf-8")).hexdigest()[:16]
                 url = page_url
