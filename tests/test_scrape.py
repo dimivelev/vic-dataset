@@ -23,6 +23,16 @@ def test_vicove_biz():
     assert set(cats) == {"ivancho", "bai-ganio"}  # /categories excluded, joke hashes excluded
 
 
+def test_vicove_biz_real_layout():
+    """Layout copied from the live site (Nov 2026): flat <p> + meta line with permalink after."""
+    ex = Extractor(SITES["vicove_biz"])
+    j = ex.extract(load("vicove_biz_real.html"), "https://www.vicove.biz/afganistan")
+    assert [x["jid"][:6] for x in j] == ["db6f8b", "74336c", "f7fc59"]
+    assert j[0]["text"].startswith("Първи виц") and j[0]["text"].endswith("първия виц!")
+    assert j[1]["text"].startswith("Втори виц") and j[2]["text"].startswith("Трети виц")
+    assert all("Оценка" not in x["text"] and "Добавен" not in x["text"] for x in j)
+
+
 def test_zaigravka_flat_cp1251():
     ex = Extractor(SITES["zaigravka_bg"])
     j = ex.extract(load("zaigravka_listing.html"), "https://www.zaigravka.bg/vicove-bai-ganio.php")

@@ -61,9 +61,11 @@ SITES: dict[str, dict] = {
         },
         "joke_link_re": r"^https?://(?:www\.)?vicove\.biz/([0-9a-f]{32})/?$",
         "pagination": "query",          # ?page=N
-        "item_selector": None,          # e.g. "div.joke" once confirmed with `probe`
-        "content_selector": None,       # e.g. "#content" to ignore sidebars
-        "flat_link_position": "before", # 'Преглед' link precedes the text
+        "item_selector": None,
+        # Verified on the live site (Nov 2026): jokes are flat <p> blocks inside
+        # <article>, each followed by a meta line ending with the 'Преглед' permalink.
+        "content_selector": "article",
+        "flat_link_position": "after",
     },
     # ~20k+ user-submitted jokes; listing 18/page, category/{slug}?page=N
     "fun_dir_bg": {
@@ -116,6 +118,8 @@ META_LINE_RE = re.compile(
       | \d+\s*(коментара?|гласа?|харесвания|прегледа?)
       | \d[\d\s]*\s+вица?\b.*                          # "40 вица, разпределени в 4 страници"
       | В\s+тази\s+категория\s+има.*
+      | \(\d{4}\)                                        # "(2003)" year stamp (fun.dir.bg)
+      | (към\s+)?вица                                   # split "към вица" link text
       | (Вицове|Още\s+вицове)\s+(за|с|от)\s+[^.!?]{1,40}  # category headings
     )$""",
     re.IGNORECASE | re.VERBOSE,
@@ -367,6 +371,10 @@ class Extractor:
                     break
             frag = BeautifulSoup(str(item), "lxml")
             body = frag.body or frag
+            for h in body.find_all(["h1", "h2", "h3"]):  # post titles, not joke text
+                rest = body.get_text(" ", strip=True).replace(h.get_text(" ", strip=True), "", 1)
+                if len(rest.strip()) >= 20:
+                    h.decompose()
             self._strip_links(body, page_url)
             text = clean_lines(node_text(body))
             if not text:
