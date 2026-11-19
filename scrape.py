@@ -120,7 +120,7 @@ META_LINE_RE = re.compile(
       | В\s+тази\s+категория\s+има.*
       | от\s+възможни\s+[\d\s]+.*                         # rating split over lines (vicove.biz)
       | [-–]?\s*общо:?\s*[\d\s]+
-      | \(\d{4}\)                                        # "(2003)" year stamp (fun.dir.bg)
+      | \(\d{1,4}\)                                      # "(2003)" year / "(4)" counter (fun.dir.bg)
       | (към\s+)?вица                                   # split "към вица" link text
       | (Вицове|Още\s+вицове)\s+(за|с|от)\s+[^.!?]{1,40}  # category headings
     )$""",

@@ -67,7 +67,7 @@ def normalise(text: str) -> str:
         line = re.sub(r"[ \t]+", " ", line).strip()
         if not line:
             continue
-        if re.fullmatch(r"\(\d{4}\)|(към\s+)?вица|Преглед|Виж този виц", line, re.I):
+        if re.fullmatch(r"\(\d{1,4}\)|(към\s+)?вица|Преглед|Виж този виц", line, re.I):
             continue  # site chrome that slipped through scraping
         # unify dialogue dashes at line start:  "-Как си?" / "— Как си?" -> "– Как си?"
         line = re.sub(r"^[-–—―]\s*", "– ", line)
